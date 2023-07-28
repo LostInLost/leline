@@ -1,7 +1,10 @@
-import { Avatar, Box, Button, Grid, Input, LinearProgress, Modal, Stack, TextField, Typography } from "@mui/material";
+import { Avatar, Box, Button, Grid, Input, LinearProgress, Modal, Snackbar, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import EditIcon from '@mui/icons-material/Edit';
+import { Cookies } from "react-cookie";
+import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
+import axios from "axios";
 
 export default function Profile(){
     const data = useLoaderData()
@@ -12,10 +15,21 @@ export default function Profile(){
     const [avatar, setAvatar] = useState(null)
     const inputAvatar = useRef(null)
     const [email, setEmail] = useState(null)
+    const [isInputCredentials, setIsInputCredentials] = useState(false)
     const emailRef = useRef()
+    const [nik, setNik] = useState(null)
+    const [ktp, setKtp] = useState(null)
+    const [errNik, setErrNik] = useState('')
+    const [errKtp, setErrKtp] = useState('')
+    const [errPhotoKtp, setErrPhotoKtp] = useState('')
+    const [errorMsg, setErrMsg] = useState({ open: false})
     const photoKTPRef = useRef()
     const [password, setPassword] = useState(null)
     const [credentialOpen, setCredentialOpen] = useState(false)
+    const cookies = new Cookies();
+     const API = axios.create({
+    baseURL: process.env.REACT_APP_URL_API,
+    });
 
     const handleAvatar = (target) => {
         setAvatar(target)
@@ -23,6 +37,44 @@ export default function Profile(){
 
     const openCredential = () => {
         setCredentialOpen(true)
+    }
+
+    const openErrorMsg = (msg) => {
+        setErrMsg({ ...msg, open: true})
+        setTimeout(() => {
+            setErrMsg({open: false})
+        }, 3000)
+    }
+
+    const submitCredentials = async() => {
+        const formData = new FormData()
+        await formData.append('photo', photoKTPRef.current.files[0])
+        await formData.append('nik', nik)
+        await formData.append('no_ktp', ktp)
+
+        await API.postForm('user/verification', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${cookies.get('__token_')}`,
+                Accept: 'application/json'
+            }
+        })
+        .then((res) => {
+            // if (res.status == 200) return snackBar('Success', {})
+        })
+        .catch((err) => {
+            if (err.response.status === 409) return openErrorMsg({msg: err.response.data?.message})
+        })
+    }
+
+    const checkInputCredentials = () => {
+        if (!photoKTPRef.current?.files[0]) return setIsInputCredentials(false)
+
+        return setIsInputCredentials(true)
+    }
+
+    const checkValidSubmitCredentials = () => {
+        return !isInputCredentials || nik == null || nik == '' || ktp == null || ktp == ''
     }
 
     const TextCredentialButton = () => {
@@ -60,7 +112,7 @@ export default function Profile(){
             </Grid>
             <Grid item xs={6} sx={{ marginTop: '1rem' }}>
                 <Typography variant="subtitle1" color="initial" >Status Credential</Typography>
-                <Button disabled={data.user?.state === 1} sx={{ margin: '1rem' }} onClick={() => openCredential()}  variant="outlined">{TextCredentialButton()}</Button>
+                <Button disabled={data.user?.state !== 0} sx={{ margin: '1rem' }} onClick={() => openCredential()}  variant="outlined">{TextCredentialButton()}</Button>
                 <Modal  open={credentialOpen} onClose={() => setCredentialOpen(false)}>
                 <Box sx={{ 
                     position: 'absolute',
@@ -71,25 +123,49 @@ export default function Profile(){
                     borderRadius: '0.5rem',
                     padding: '1rem'
                  }}>
+                    <form action="" onSubmit={(e) => {
+                        e.preventDefault()
+                        submitCredentials()
+                    }}>
+                    <Stack direction={'row'}>
                     <Typography sx={{ 
                         color: 'dark'
                      }} variant="subtitle1" id={'credential-title'} color="initial">Verify Your Credential</Typography>
-                    <LinearProgress sx={{ width: '100%' }} variant="determinate" value={67} />
-                    <Stack direction={'row'}>
-                        <TextField type="file" inputRef={photoKTPRef} sx={{ display: 'none' }} />
-                        <Button variant="filled" sx={{ backgroundColor: '#4287f5', margin: '0.5rem' }} onClick={() => photoKTPRef.current.click()}>Upload KTP</Button>
-                    </Stack>
+                     </Stack>
+                     <Stack direction={'column'} columnGap={2} spacing={2}>
+                     <TextField type="file" inputRef={photoKTPRef} onChange={() => checkInputCredentials()} sx={{ display: 'none' }} />
+                        {isInputCredentials ? 
+                        <Button variant="filled" sx={{ backgroundColor: 'red', color: 'white' , margin: '0.5rem', }} onClick={() => {
+                            photoKTPRef.current.value = null
+                            checkInputCredentials()
+                        }}>Delete KTP</Button>
+                        : 
+                        <Button variant="filled" sx={{ backgroundColor: '#4287f5', margin: '0.5rem', display: isInputCredentials ? 'none' : 'block' }} onClick={() => photoKTPRef.current.click()}>Upload KTP</Button>
+                        }
+                        <TextField required type="text" placeholder="Input your NIK" variant="standard" onChange={(e) => setNik(e.target.value)} />
+                        <TextField required type="text" placeholder="Input your KTP Number" variant="standard" onChange={(e) => setKtp(e.target.value)} />
+                     </Stack>
+                        
                     <Box sx={{ 
                         display: 'flex',
-                        marginTop: 'auto'
+                        marginTop: '1rem'
                      }}>
-                        <Button variant="filled" sx={{ backgroundColor: '#42f557', margin: '0.5rem' }}>Submit</Button>
+                        <Button variant="filled" disabled={checkValidSubmitCredentials()} sx={{ backgroundColor: '#42f557', margin: '0.5rem' }} type="submit">Submit</Button>
+                    
                         <Button onClick={() => setCredentialOpen(false)} variant="filled" sx={{ backgroundColor: '#42f557', margin: '0.5rem' }}>Cancel</Button>
                     </Box>
+                    </form>
                 </Box>
                 </Modal>
             </Grid>
         </Grid>
+
+        <Snackbar 
+        open={errorMsg.open}
+        message={errorMsg?.msg}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        
+        />
         </>
     )
 }
