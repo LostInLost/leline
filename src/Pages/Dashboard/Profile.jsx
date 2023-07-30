@@ -1,13 +1,14 @@
-import { Avatar, Box, Button, Grid, Input, LinearProgress, Modal, Snackbar, Stack, TextField, Typography } from "@mui/material";
+import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, LinearProgress, Modal, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import EditIcon from '@mui/icons-material/Edit';
 import { Cookies } from "react-cookie";
 import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
 import axios from "axios";
 
 export default function Profile(){
-    let data = useLoaderData()
+    const loaderData = useLoaderData()
+    let data = loaderData
     const [username, setUsername] = useState('')
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
@@ -15,25 +16,40 @@ export default function Profile(){
     const [avatar, setAvatar] = useState(null)
     const inputAvatar = useRef(null)
     const [email, setEmail] = useState('')
-    const [isInputCredentials, setIsInputCredentials] = useState(false)
-    const [Submitting, setSubmitting] = useState(false)
     const [nik, setNik] = useState('')
     const [ktp, setKtp] = useState('')
     
     const photoKTPRef = useRef()
     const [password, setPassword] = useState('')
+
+    // DOM Action Variable 
     const [credentialOpen, setCredentialOpen] = useState(false)
+    const [Submitting, setSubmitting] = useState(false)
+    const [SubmittingProfile, setSubmitProfile] = useState(false)
+    const [isInputCredentials, setIsInputCredentials] = useState(false)
+    const [isHasChanges, setIsHasChanges] = useState(false)
+    const [openDialogSubmit, setOpenDialogSubmit] = useState(false)
+    // END DOM Action Variable 
 
     // Error Callback Variable 
     const [errNik, setErrNik] = useState([])
     const [errKtp, setErrKtp] = useState([])
     const [errPhotoKtp, setErrPhotoKtp] = useState([]) 
-    
+    const [errName, setErrName] = useState([])
+    const [errUsername, setErrUsername] = useState([])
+    const [errPhone, setErrPhone] = useState([])
+    const [errEmail, setErrEmail] = useState([])
+    const [errPassword, setErrPassword] = useState([])
     // End Error CallBack Variable 
+
+    const navigate = useNavigate()
     const cookies = new Cookies();
      const API = axios.create({
     baseURL: process.env.REACT_APP_URL_API,
     });
+    const API_IMAGE = axios.create({
+        baseURL: process.env.REACT_APP_URL_IMAGE
+    })
 
     const getUserInfo = async() => {
         await API.get('user', {
@@ -42,6 +58,7 @@ export default function Profile(){
             }
         })
         .then((res) => {
+            console.log(res.data)
             return data = res.data
         })
         .catch((err) => {
@@ -56,13 +73,20 @@ export default function Profile(){
         setName(data.user?.name)
         setEmail(data.user?.email)
         setPhone(data.user?.phone)
-    }
+        setAvatar(`${process.env.REACT_APP_URL_IMAGE}profiles/${data.user?.photo}`)
+        }
 
 
     const clearValidation = () => {
         setErrKtp([])
         setErrNik([])
         setErrPhotoKtp([])
+        setErrName([])
+        setErrEmail([])
+        setErrUsername([])
+        setErrPhone([])
+        setErrPassword([])
+        inputAvatar.current.value = null
     }
     const handleAvatar = (target) => {
         setAvatar(target)
@@ -115,6 +139,84 @@ export default function Profile(){
         })
     }
 
+    
+    const makeSureSubmitProfiles = () => {
+        if (email !== data.user?.email || password !== '') return setOpenDialogSubmit(true)
+
+        return submitProfiles()
+    }
+
+    const cancelMakeSureSubmitProfiles = () => {
+        setSubmitProfile(false)
+        setOpenDialogSubmit(false)
+    }
+
+    const handleLogout = async() => {
+    await API.postForm('logout', {}, {
+      headers: {
+        Authorization: 'Bearer ' + cookies.get('__token_'),
+        Accept: 'application/json',
+      }
+    }).then((res) => {
+      if (res.status !== 200) return
+        localStorage.removeItem('__user');
+      cookies.remove('__token_');
+      return window.location.reload()
+
+    }).catch((err) => {
+        console.log(err)
+    })
+  }
+
+    const submitProfiles = async() => {
+        setSubmitProfile(true)
+
+        const formData = new FormData()
+        if (inputAvatar.current.value !== null || inputAvatar.current.value !== '') await formData.append('photo', inputAvatar.current.files[0] ?? null)
+        await formData.append('username', username)
+        await formData.append('name', name)
+        await formData.append('email', email)
+        if (phone !== '') await formData.append('phone', phone)
+        if (password !== '') await formData.append('password', password)
+
+        await API.postForm('user', formData, {
+            headers: {
+                Authorization: `Bearer ${cookies.get('__token_')}`,
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+        .then((res) => {
+            if (res.status !== 200) return
+            if (email !== data.user?.email || password !== '') {
+                return handleLogout()
+            }
+            navigate('/dashboard/profiles/' + username)
+            setSubmitProfile(false)
+            clearValidation()
+            setIsHasChanges(false)
+            return enqueueSnackbar(res.data.message, {
+                variant: 'success'
+            })
+        })
+        .catch((err) => {
+            if (err.response.status !== 400) return
+
+            let errors = err.response.data.errors
+
+            setErrName(errors.name ?? [])
+            setErrEmail(errors.email ?? [])
+            setErrUsername(errors.username ?? [])
+            setErrPassword(errors.password ?? [])
+            setErrPhone(errors.phone ?? []) 
+            setSubmitProfile(false)
+            if (errors?.photo?.length > 0) return enqueueSnackbar(errors?.photo[0] ?? null, {
+                variant: 'error'
+            })
+            return enqueueSnackbar('Profiles not successfully updated', {
+                variant: 'error'
+            })
+        })
+    }
     const checkInputCredentials = () => {
         if (!photoKTPRef.current?.files[0]) return setIsInputCredentials(false)
 
@@ -125,42 +227,49 @@ export default function Profile(){
         return !isInputCredentials || nik == null || nik == '' || ktp == null || ktp == ''
     }
 
-    // const checkSaveChanges = () => {
-    //     if (name !== data.user?.name || phone !== data.user?.phone || email !== data !== data.user?.email || username !== data.user?.username)
-    // }
+    const checkValidSubmitProfiles = () => {
+        let user = data.user
+        return setIsHasChanges(name !== user?.name || (username !== user?.username && username.length !== 0) || email !== user?.email || password !== '' || phone !== user?.phone || inputAvatar.current.value !== '')
+    }
 
     const TextCredentialButton = () => {
         if (data.user?.state === 0) return 'Verify Credential'
         if (data.user?.state === 1) return 'Verifying...'
         if (data.user?.state === 2) return 'Verified'
     }
+
+
     useEffect(() => {
         setProfile()
         setUser( localStorage.getItem('__user') ? JSON.parse(localStorage.getItem('__user')) : {});
     }, [])
+
+    useEffect(() => {
+        checkValidSubmitProfiles()
+    }, [name, username, email, phone, password, inputAvatar.current?.value])
     return (
         <>
         <Typography component={'h1'} fontSize={'36px'}>Profile</Typography>
         <Grid container columnSpacing={2}>
             <Grid item xs={12} justifyContent={'center'} display={'flex'} flexDirection={'column'} alignItems={'center'}>
-                <input ref={inputAvatar} type="file" style={{ display: 'none' }} onChange={(e) => handleAvatar(e.target.files[0])} />
-                {/* <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== 'avatar.png' ? user?.avatar : undefined} /> */}
-                <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={avatar ? URL.createObjectURL(avatar) : user?.photo} />
-                
+                <input ref={inputAvatar} type="file" style={{ display: 'none' }} onChange={(e) => {handleAvatar( URL.createObjectURL(e.target.files[0]));}} />
+                {/* <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== 'avatar.png'
+                 ? user?.avatar : undefined} /> */}
+                    <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={avatar ? avatar : user?.photo}/>
                 <br />
                 <Typography component={'h2'} sx={{ ':hover': {cursor: 'pointer'} }} onClick={() => inputAvatar.current.click()}>Edit Photo Profile <EditIcon sx={{ fontSize: '12px' }} /></Typography>
             </Grid> 
             <Grid item xs={12} sx={{ marginTop: '1rem' }} >
                 <Stack direction={'column'}  sx={{ justifyContent: 'center', display: 'flex', }} flexWrap={'wrap'} >
-                    <TextField type="text" variant="outlined" sx={{ margin: '1rem' }} value={username} label={'Username'} onChange={(e) => setUsername(e.target.value)} />
-                    <TextField type="text" variant="outlined" sx={{ margin: '1rem' }} value={name} label={'Name'} onChange={(e) => setName(e.target.value)} />
-                    <TextField type={'number'} variant="outlined" focused color={!phone || phone === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={phone} label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setPhone(e.target.value)} />
-                    <TextField type="email" variant="outlined" sx={{ margin: '1rem' }} value={email} label={'Email'} onChange={(e) => setEmail(e.target.value)} />
-                    <TextField helperText={'Please fill if you want change'} type="password" variant="outlined" sx={{ margin: '1rem' }} value={password} label={'Password'} onChange={(e) => setPassword(e.target.value)} />
+                    <TextField required type="text" error={errUsername.length !== 0} helperText={errUsername[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={username} label={'Username'} onChange={(e) => setUsername(e.target.value)} />
+                    <TextField required type="text" error={errName.length !== 0} helperText={errName[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={name} label={'Name'} onChange={(e) => setName(e.target.value)} />
+                    <TextField required error={errPhone.length !== 0} helperText={errPhone[0] ?? null} type={'number'} variant="outlined" color={!phone || phone === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={phone} label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setPhone(e.target.value)} />
+                    <TextField required type="email" error={errEmail.length !== 0} helperText={errEmail[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={email} label={'Email'} onChange={(e) => setEmail(e.target.value)} />
+                    <TextField error={errPassword.length !== 0} helperText={errPassword[0] ?? 'Please fill if you want change'} type="password" variant="outlined" sx={{ margin: '1rem' }} value={password} label={'Password'} onChange={(e) => setPassword(e.target.value)} />
                 </Stack>
             </Grid>
             <Grid item xs={12} sx={{ marginTop: '1rem' }}>
-                <Typography variant="subtitle1" color="initial" >Status Credential</Typography>
+                <Typography variant="subtitle1" color="initial" >Credentials</Typography>
                 <Button disabled={data.user?.state !== 0} sx={{ margin: '1rem' }} onClick={() => openCredential()}  variant="outlined">{TextCredentialButton()}</Button>
                 <Modal  open={credentialOpen} onClose={() => setCredentialOpen(false)}>
                 <Box sx={{ 
@@ -215,13 +324,35 @@ export default function Profile(){
             </Grid>
 
             <Grid item xs={12} sx={{ marginTop: '1rem', display: 'flex' }} >
-                     <Button variant={'contained'} sx={{ marginLeft: 'auto' }}>Submit</Button>
+                     <Button variant={'contained'} onClick={(e) => {
+                        e.preventDefault()
+                        makeSureSubmitProfiles()
+                     }} sx={{ marginLeft: 'auto' }} disabled={!isHasChanges || SubmittingProfile}>{SubmittingProfile ? <CircularProgress size={26} sx={{ color: 'white', display: 'block' }} /> : 'Save Changes'} </Button>
             </Grid>
         </Grid>
+
+
         <SnackbarProvider 
         autoHideDuration={3000}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         />
+
+        <Dialog
+        open={openDialogSubmit}
+        >
+        <DialogTitle>
+            Are you sure to save changes?
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText>
+                You are already change <b>Email</b> or <b>Password</b>. So, we will make you automatically logout and You must login again
+            </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => {setOpenDialogSubmit(false); submitProfiles()}}>Save Changes</Button>
+            <Button onClick={() => cancelMakeSureSubmitProfiles()}>Cancel</Button>
+        </DialogActions>
+        </Dialog>
         </>
     )
 }
