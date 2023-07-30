@@ -14,7 +14,7 @@ import Profile from './Pages/Dashboard/Profile';
 const HomePage = lazy(() => import('./Pages/HomePage'));
 const RegisterPage = lazy(() => import('./Pages/RegisterPage'));
 const LoginPage = lazy(() => import('./Pages/LoginPage'));
-const DashboardUserPage = lazy(() => import('./Pages/DashboardUser'));
+const DashboardUserPage = lazy(() => import('./Layouts/DashboardUser'));
 function App() {
   // const navigate = useNavigate()
   const API = axios.create({
@@ -34,9 +34,9 @@ function App() {
       })
       .catch((err) => {
         if (err.response.status === 401) {
-          setErrCode(401)
-          throw window.location.href = '/'
-          throw new Response(JSON.stringify({success: false, message: 'Unauthorized'}), {status: 401})
+          setErrCode(401);
+          throw (window.location.href = '/');
+          throw new Response(JSON.stringify({ success: false, message: 'Unauthorized' }), { status: 401 });
         }
         setErrCode(502);
         throw new Response(JSON.stringify({ success: false, message: 'Bad Gateaway' }), { status: 502 });
@@ -44,49 +44,20 @@ function App() {
           success: false,
         });
       });
-        
-      return data
+
+    return data;
   };
   const cookies = new Cookies();
   const router = createBrowserRouter([
     {
       path: '/',
-      element: <HomePage />,
-      // loader: async() => {
-      //   let data;
-      //   await setInterval(() => {
-      //     data = json({
-      //       success: true,
-      //     })
-
-      //     return new Response(JSON.stringify(data), {status: 200})
-      //   }, 1000)
-      //   return setInterval(() => {
-      //     return null
-      //   }, 2000)
-      // }
-      // loader: async() => {
-      //   let data;
-      //   await API.get('user', {
-      //     headers: {
-      //       token: cookies.get('__token_'),
-      //     },
-      //   })
-      //     .then((res) => {
-      //       data = json({
-      //         success: true
-      //       })
-      //     })
-      //     .catch((err) => {
-      //       setErrCode(502);
-      //       data = json({
-      //         success: false,
-      //       });
-
-      //       throw new Response(data, {status: 502})
-      //     });
-      //     return data
-      // },
+      element: <Navbar />,
+      children: [
+        {
+          index: true,
+          element: <HomePage />,
+        },
+      ],
       errorElement: <PageError errorCode={ErrorCode} />,
     },
     {
@@ -107,12 +78,12 @@ function App() {
           loader: () => {
             return getUserInfo();
           },
-          errorElement: <PageError errorCode={ErrorCode} />
+          errorElement: <PageError errorCode={ErrorCode} />,
         },
         {
           path: 'tes',
-          element: <h2>Tes</h2>
-        }
+          element: <h2>Tes</h2>,
+        },
       ],
     },
   ]);
@@ -122,8 +93,6 @@ function App() {
       <Suspense fallback={<Loading />}>
         <RouterProvider router={router} />
       </Suspense>
-
-      
 
       {/* <BrowserRouter>
         <RouterProvider>

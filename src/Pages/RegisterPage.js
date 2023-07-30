@@ -18,6 +18,7 @@ const RegisterPage = () => {
     error: false,
     message: null
   }
+  const [errorMail, setErrMail] = useState([])
   const [isErrorEmail, setErrorEmail] = useState(defaultNoError);
   const [isErrorName, setErrorName] = useState(defaultNoError);
   const [isErrorUsername, setErrorUsername] = useState(defaultNoError);
@@ -51,7 +52,7 @@ const RegisterPage = () => {
         .then((res) => {
           if (res.status !== 200) return;
 
-          setErrorEmail(defaultNoError)
+          // setErrorEmail(defaultNoError)
           setErrorName(defaultNoError)
           setErrorPassword(defaultNoError)
           setErrorRePassword(defaultNoError)
@@ -71,6 +72,7 @@ const RegisterPage = () => {
           if (err.response.status === 400)
           {
             const errors = err.response.data.errors
+            setErrMail(errors.email ?? [])
             setErrorPassword({
               error: !errors.password ? false : true,
               message: !errors.password ? '' : errors.password[0]
@@ -98,19 +100,6 @@ const RegisterPage = () => {
 
   const handleRePassword = (value) => {
     setRePassword(value);
-    // setErrorRePassword({
-    //   error: false,
-    //   message: 'Checking...',
-    // });
-
-    // const isSame = value === password;
-
-    // if (!value) return
-    // if (!isSame)
-    //   return setErrorRePassword({
-    //     error: true,
-    //     message: 'Re-Password is not match with the Password',
-    //   });
   };
 
   // Styling MUI
@@ -196,8 +185,8 @@ const RegisterPage = () => {
                     <Grid item xs="12" sm="6">
                       <TextField
                         type="email"
-                        error={isErrorEmail.error}
-                        helperText={isErrorEmail.message}
+                        error={errorMail.length !== 0}
+                        helperText={errorMail[0] ?? null}
                         required
                         value={email}
                         onChange={(e) => {setEmail(e.target.value);}}

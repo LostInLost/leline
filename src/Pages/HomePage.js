@@ -67,7 +67,6 @@ export default function HomePage() {
   }, [])
   return (
     <>
-      <Navbar />
       <Container>
         <Box position={'sticky'}>
           <Button sx={{ color: 'black', marginTop: '10px' }} onMouseLeave={(e) => handleCloseFilter()} onMouseEnter={(e) => handleOpenFilter(e)} onClick={(e) => setFixedFilter(!fixedFilter)}>

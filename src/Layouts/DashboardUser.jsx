@@ -1,17 +1,18 @@
-import { Link, Outlet, useParams } from "react-router-dom"
+import { Link, Outlet, useNavigate, useParams } from "react-router-dom"
 import Typography from '@mui/material/Typography'
 import { Box, Button, Container, Divider, Grid, List, ListItemButton, ListItemIcon, ListItemText, MenuItem, Popper } from "@mui/material"
-import SideBar from '../Layouts/SideBar'
+import SideBar from './SideBar'
 import styled from "@emotion/styled"
 import { useState } from "react"
-import Profile from "./Dashboard/Profile"
-import { AccountBox, DensityMedium, PowerSettingsNew } from "@mui/icons-material"
+import Profile from "../Pages/Dashboard/Profile"
+import { AccountBox, DensityMedium, Home, PowerSettingsNew } from "@mui/icons-material"
 import axios from "axios"
 import { Cookies } from "react-cookie"
 
 
 export default function DashboardUser() {
     const params = useParams()
+    const navigate = useNavigate()
     const cookies = new Cookies();
      const API = axios.create({
     baseURL: process.env.REACT_APP_URL_API,
@@ -44,12 +45,7 @@ export default function DashboardUser() {
 
       
   }
-    // const GridStyled = styled(Grid)(({theme}) => ({
-    //     ':hover': {
-    //         borderRadius: '0.5rem',
-    //         cursor: 'progress'
-    //     }
-    // }))
+
     return (
         <>
         <Box sx={{ position: 'absolute', backgroundColor: '#2072BA', width: '100vw', height: '100vh' }}>
@@ -67,16 +63,23 @@ export default function DashboardUser() {
                     // padding: '0.5rem', 
                     boxShadow: '0 0 8px 0 rgb(0,0,0,0.4)',
                     borderRadius: '0.5rem'
-                    }} open={openDashboard} anchorEl={anchorDashboard} placement="bottom-start" onMouseEnter={() => setOpenDashboard(true)} onMouseLeave={() => setOpenDashboard(!openDashboard)}>
+                    }} 
+                    open={openDashboard} anchorEl={anchorDashboard} placement="bottom-start" onMouseEnter={() => setOpenDashboard(true)} onMouseLeave={() => setOpenDashboard(!openDashboard)}>
                         <Box>
                             <List 
                             // subheader={<Typography component={'span'}>Menu</Typography>}
                             >
-                                <MenuItem href={`/dashboard/profiles/${userData?.username}`}>
+                                <MenuItem onClick={() => navigate(`/dashboard/profiles/${userData?.username}`)}>
                                     <ListItemIcon>
                                         <AccountBox />
                                     </ListItemIcon>
                                     <ListItemText primary={'Profile'} />
+                                </MenuItem>
+                                <MenuItem onClick={() => navigate('/')}>
+                                    <ListItemIcon>
+                                        <Home />
+                                    </ListItemIcon>
+                                    <ListItemText primary={'Home'} />
                                 </MenuItem>
                                 <Divider />
                         <MenuItem onClick={() => handleLogout()}>

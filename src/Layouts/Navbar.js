@@ -3,7 +3,7 @@ import LinkMui from '@mui/material/Link'
 import { Box, AppBar, Toolbar, InputBase, styled, Button, Stack, IconButton, Badge, Popover, Avatar, Popper, MenuList, ListItemIcon, ListItemText, MenuItem, Divider, Snackbar, Alert } from '@mui/material';
 import { Notifications, Search, FilterList, Close, ArrowCircleLeft, ArrowBackIos, Person, PowerSettingsNew } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { Cookies } from 'react-cookie';
 import axios from 'axios';
 export default function Navbar() {
@@ -246,6 +246,7 @@ export default function Navbar() {
           </Box>
         </Box>
       </Box>
+      <Outlet />
     </>
   );
 }
