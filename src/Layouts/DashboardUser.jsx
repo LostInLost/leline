@@ -1,16 +1,18 @@
-import { Link, Outlet, useNavigate, useParams } from "react-router-dom"
+import { Link, Outlet, useLoaderData, useNavigate, useParams, useRouteLoaderData } from "react-router-dom"
 import Typography from '@mui/material/Typography'
 import { Box, Button, Container, Divider, Grid, List, ListItemButton, ListItemIcon, ListItemText, MenuItem, Popper } from "@mui/material"
 import SideBar from './SideBar'
 import styled from "@emotion/styled"
 import { useState } from "react"
 import Profile from "../Pages/Dashboard/Profile"
-import { AccountBox, DensityMedium, Home, PowerSettingsNew } from "@mui/icons-material"
+import { AccountBox, DensityMedium, Home, PowerSettingsNew, VerifiedUser } from "@mui/icons-material"
 import axios from "axios"
 import { Cookies } from "react-cookie"
 
 
 export default function DashboardUser() {
+
+    const data = useLoaderData()
     const params = useParams()
     const navigate = useNavigate()
     const cookies = new Cookies();
@@ -81,6 +83,19 @@ export default function DashboardUser() {
                                     </ListItemIcon>
                                     <ListItemText primary={'Home'} />
                                 </MenuItem>
+                                {data.user?.role === 2 ?
+                                <>
+                                <Divider />
+                                <MenuItem onClick={() => navigate('/dashboard/admin/verification_users')}>
+                                    <ListItemIcon>
+                                        <VerifiedUser />
+                                    </ListItemIcon>
+                                    <ListItemText primary={'Verification Users'} />
+                                </MenuItem>
+                                </>
+                                : undefined
+                              }
+                                
                                 <Divider />
                         <MenuItem onClick={() => handleLogout()}>
                           <ListItemIcon>

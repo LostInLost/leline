@@ -11,6 +11,7 @@ export default function Navbar() {
   const [anchorNotif, setAnchorNotif] = useState(null);
   const [anchorMyProfile, setAnchorMyProfile] = useState(null)
   const [openMyProfile, setOpenMyProfile] = useState(false)
+  const [ApiImage, setApiImage] = useState(null)
   const [search, setSearch] = useState('');
   const [user, setUser] = new useState({});
   const userData = JSON.parse(localStorage.getItem('__user'))
@@ -150,10 +151,9 @@ export default function Navbar() {
   }));
 
   useEffect(() => {
-    setTimeout(() => {
-      // setNotif(false);
-    }, 3000);
-  });
+    setApiImage(process.env.REACT_APP_URL_IMAGE + `profiles/${user?.avatar}`)
+    console.log(ApiImage)
+  }, [user?.avatar]);
   return (
     <>
       <Box>
@@ -206,7 +206,7 @@ export default function Navbar() {
               {user?.username ? (
                 <>
                   <Button aria-describedby="pop-profile" onMouseEnter={(e) => handleMouseProfile(e.currentTarget)} onMouseLeave={(e) => setOpenMyProfile(false)}>
-                    <Avatar sx={{ bgcolor: 'grey' }} children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== 'avatar.png' ? user?.avatar : undefined} />
+                    <Avatar sx={{ bgcolor: 'grey' }} children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== undefined ? ApiImage : undefined} />
                   </Button>
                   <Popper
                     onMouseEnter={(e) => setOpenMyProfile(true)}

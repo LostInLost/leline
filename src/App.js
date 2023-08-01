@@ -15,6 +15,7 @@ const HomePage = lazy(() => import('./Pages/HomePage'));
 const RegisterPage = lazy(() => import('./Pages/RegisterPage'));
 const LoginPage = lazy(() => import('./Pages/LoginPage'));
 const DashboardUserPage = lazy(() => import('./Layouts/DashboardUser'));
+const VerificationUsers = lazy(() => import('./Pages/Dashboard/Admin/VerificationUsers'))
 function App() {
   // const navigate = useNavigate()
   const API = axios.create({
@@ -47,6 +48,7 @@ function App() {
 
     return data;
   };
+
   const cookies = new Cookies();
   const router = createBrowserRouter([
     {
@@ -71,14 +73,21 @@ function App() {
     {
       path: `/dashboard`,
       element: <DashboardUserPage />,
+      loader: () => {
+        return getUserInfo();
+      },
       children: [
         {
           path: 'profiles/:username',
-          element: <Profile />,
           loader: () => {
             return getUserInfo();
           },
+          element: <Profile />,
           errorElement: <PageError errorCode={ErrorCode} />,
+        },
+        {
+          path: 'admin/verification_users',
+          element: <VerificationUsers />,
         },
         {
           path: 'tes',

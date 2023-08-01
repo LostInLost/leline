@@ -1,10 +1,11 @@
 import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, LinearProgress, Modal, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { useLoaderData, useNavigate } from "react-router-dom";
+import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router-dom";
 import EditIcon from '@mui/icons-material/Edit';
 import { Cookies } from "react-cookie";
 import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
 import axios from "axios";
+import { Done, Verified } from "@mui/icons-material";
 
 export default function Profile(){
     const loaderData = useLoaderData()
@@ -190,6 +191,11 @@ export default function Profile(){
             if (email !== data.user?.email || password !== '') {
                 return handleLogout()
             }
+            const userData = new Object()
+            userData.username = username
+            userData.avatar = inputAvatar.current.files[0] ?? avatar
+            localStorage.setItem('__user', JSON.stringify(userData))
+            inputAvatar.current.value = null
             navigate('/dashboard/profiles/' + username)
             setSubmitProfile(false)
             clearValidation()
@@ -199,6 +205,7 @@ export default function Profile(){
             })
         })
         .catch((err) => {
+            console.log(err)
             if (err.response.status !== 400) return
 
             let errors = err.response.data.errors
@@ -263,14 +270,22 @@ export default function Profile(){
                 <Stack direction={'column'}  sx={{ justifyContent: 'center', display: 'flex', }} flexWrap={'wrap'} >
                     <TextField required type="text" error={errUsername.length !== 0} helperText={errUsername[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={username} label={'Username'} onChange={(e) => setUsername(e.target.value)} />
                     <TextField required type="text" error={errName.length !== 0} helperText={errName[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={name} label={'Name'} onChange={(e) => setName(e.target.value)} />
+                    {data.user?.role !== 2 ?
                     <TextField required error={errPhone.length !== 0} helperText={errPhone[0] ?? null} type={'number'} variant="outlined" color={!phone || phone === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={phone} label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setPhone(e.target.value)} />
+                    : undefined
+                    }
                     <TextField required type="email" error={errEmail.length !== 0} helperText={errEmail[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={email} label={'Email'} onChange={(e) => setEmail(e.target.value)} />
                     <TextField error={errPassword.length !== 0} helperText={errPassword[0] ?? 'Please fill if you want change'} type="password" variant="outlined" sx={{ margin: '1rem' }} value={password} label={'Password'} onChange={(e) => setPassword(e.target.value)} />
                 </Stack>
             </Grid>
             <Grid item xs={12} sx={{ marginTop: '1rem' }}>
-                <Typography variant="subtitle1" color="initial" >Credentials</Typography>
-                <Button disabled={data.user?.state !== 0} sx={{ margin: '1rem' }} onClick={() => openCredential()}  variant="outlined">{TextCredentialButton()}</Button>
+                <Typography variant="subtitle1" color="initial">Credentials</Typography>
+                {data.user?.state === 2 ?
+                <Button variant="contained"  color="success" disableRipple disableElevation endIcon={<Verified />}>Verified </Button>
+                :
+                <Button disabled={data.user?.state !== 0} sx={{ margin: '1rem', }} onClick={() => openCredential()}  variant={"outlined"} >{TextCredentialButton()}</Button>
+            }
+
                 <Modal  open={credentialOpen} onClose={() => setCredentialOpen(false)}>
                 <Box sx={{ 
                     position: 'absolute',
