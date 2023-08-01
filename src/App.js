@@ -14,13 +14,14 @@ import Profile from './Pages/Dashboard/Profile';
 const HomePage = lazy(() => import('./Pages/HomePage'));
 const RegisterPage = lazy(() => import('./Pages/RegisterPage'));
 const LoginPage = lazy(() => import('./Pages/LoginPage'));
-const DashboardUserPage = lazy(() => import('./Layouts/DashboardUser'));
+const Dashboard = lazy(() => import('./Layouts/DashboardUser'));
 const VerificationUsers = lazy(() => import('./Pages/Dashboard/Admin/VerificationUsers'))
 function App() {
   // const navigate = useNavigate()
   const API = axios.create({
     baseURL: process.env.REACT_APP_URL_API,
   });
+  const userData = JSON.parse(localStorage.getItem('__user'))
   const [ErrorCode, setErrCode] = useState(404);
 
   const getUserInfo = async () => {
@@ -31,10 +32,15 @@ function App() {
       },
     })
       .then((res) => {
+        const user = new Object()
+        user.username = res.data.user?.username
+        user.avatar = res.data.user?.photo
+        localStorage.setItem('__user', JSON.stringify(user));
         data = json(res.data);
       })
       .catch((err) => {
-        if (err.response.status === 401) {
+        console.log(err)
+        if (err.response?.status === 401) {
           setErrCode(401);
           throw (window.location.href = '/');
           throw new Response(JSON.stringify({ success: false, message: 'Unauthorized' }), { status: 401 });
@@ -72,18 +78,20 @@ function App() {
     },
     {
       path: `/dashboard`,
-      element: <DashboardUserPage />,
+      element: <Dashboard />,
+      id: 'dashboard',
       loader: () => {
         return getUserInfo();
       },
+      shouldRevalidate: () => {
+        console.log(window.location.pathname === '/dashboard/profiles/' + userData?.username);
+        return window.location.pathname === '/dashboard/profiles/' + userData?.username || localStorage.getItem('revalidate')
+      },
+      errorElement: <PageError errorCode={ErrorCode} />,
       children: [
         {
           path: 'profiles/:username',
-          loader: () => {
-            return getUserInfo();
-          },
           element: <Profile />,
-          errorElement: <PageError errorCode={ErrorCode} />,
         },
         {
           path: 'admin/verification_users',
@@ -103,17 +111,6 @@ function App() {
         <RouterProvider router={router} />
       </Suspense>
 
-      {/* <BrowserRouter>
-        <RouterProvider>
-          <Suspense fallback={<h2>Loading...</h2>}>
-            <Routes>
-              <Route path='dashboard' element={<DashboardUserPage />}>
-                    <Route path='profiles/:username' element={<Profile />} loader={() => {return getUserInfo()}}></Route>
-              </Route>
-            </Routes>
-          </Suspense>
-        </RouterProvider>
-      </BrowserRouter> */}
     </>
   );
 }

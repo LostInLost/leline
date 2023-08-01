@@ -92,6 +92,7 @@ export default function Navbar() {
   useEffect(() => {
     if (!cookies.get('__token_')) {localStorage.clear()}
     setUser( localStorage.getItem('__user') ? JSON.parse(localStorage.getItem('__user')) : {});
+    console.log(user)
   }, []);
   // Styled MUI
 
@@ -150,10 +151,6 @@ export default function Navbar() {
     },
   }));
 
-  useEffect(() => {
-    setApiImage(process.env.REACT_APP_URL_IMAGE + `profiles/${user?.avatar}`)
-    console.log(ApiImage)
-  }, [user?.avatar]);
   return (
     <>
       <Box>
@@ -206,7 +203,7 @@ export default function Navbar() {
               {user?.username ? (
                 <>
                   <Button aria-describedby="pop-profile" onMouseEnter={(e) => handleMouseProfile(e.currentTarget)} onMouseLeave={(e) => setOpenMyProfile(false)}>
-                    <Avatar sx={{ bgcolor: 'grey' }} children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== undefined ? ApiImage : undefined} />
+                    <Avatar sx={{ bgcolor: 'grey' }} children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== undefined ? `${process.env.REACT_APP_URL_IMAGE}profiles/${user?.avatar}` : undefined} />
                   </Button>
                   <Popper
                     onMouseEnter={(e) => setOpenMyProfile(true)}

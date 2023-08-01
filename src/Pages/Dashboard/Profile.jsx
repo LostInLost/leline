@@ -1,6 +1,7 @@
 import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, LinearProgress, Modal, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router-dom";
+import ButtonJoy from "@mui/joy/Button";
 import EditIcon from '@mui/icons-material/Edit';
 import { Cookies } from "react-cookie";
 import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
@@ -8,7 +9,7 @@ import axios from "axios";
 import { Done, Verified } from "@mui/icons-material";
 
 export default function Profile(){
-    const loaderData = useLoaderData()
+    const loaderData = useRouteLoaderData('dashboard')
     let data = loaderData
     const [username, setUsername] = useState('')
     const [name, setName] = useState('')
@@ -48,9 +49,6 @@ export default function Profile(){
      const API = axios.create({
     baseURL: process.env.REACT_APP_URL_API,
     });
-    const API_IMAGE = axios.create({
-        baseURL: process.env.REACT_APP_URL_IMAGE
-    })
 
     const getUserInfo = async() => {
         await API.get('user', {
@@ -188,13 +186,7 @@ export default function Profile(){
         })
         .then((res) => {
             if (res.status !== 200) return
-            if (email !== data.user?.email || password !== '') {
-                return handleLogout()
-            }
-            const userData = new Object()
-            userData.username = username
-            userData.avatar = inputAvatar.current.files[0] ?? avatar
-            localStorage.setItem('__user', JSON.stringify(userData))
+            if (email !== data.user?.email || password !== '') return handleLogout()
             inputAvatar.current.value = null
             navigate('/dashboard/profiles/' + username)
             setSubmitProfile(false)
@@ -231,7 +223,7 @@ export default function Profile(){
     }
 
     const checkValidSubmitCredentials = () => {
-        return !isInputCredentials || nik == null || nik == '' || ktp == null || ktp == ''
+        return !isInputCredentials || nik === null || nik === '' || ktp === null || ktp === ''
     }
 
     const checkValidSubmitProfiles = () => {
@@ -342,7 +334,7 @@ export default function Profile(){
                      <Button variant={'contained'} onClick={(e) => {
                         e.preventDefault()
                         makeSureSubmitProfiles()
-                     }} sx={{ marginLeft: 'auto' }} disabled={!isHasChanges || SubmittingProfile}>{SubmittingProfile ? <CircularProgress size={26} sx={{ color: 'white', display: 'block' }} /> : 'Save Changes'} </Button>
+                     }} sx={{ marginLeft: 'auto' }} disabled={!isHasChanges || SubmittingProfile}>{SubmittingProfile ? <CircularProgress size={24}  sx={{ color: 'white', display: 'block',  }} /> : 'Save Changes'} </Button>
             </Grid>
         </Grid>
 
