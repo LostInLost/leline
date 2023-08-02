@@ -4,7 +4,7 @@ import { Box, AppBar, Toolbar, InputBase, styled, Button, Stack, IconButton, Bad
 import { Notifications, Search, FilterList, Close, ArrowCircleLeft, ArrowBackIos, Person, PowerSettingsNew } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Cookies } from 'react-cookie';
+import { API, cookies } from '../Services/Api'
 import axios from 'axios';
 export default function Navbar() {
   const [openNotif, setOpenNotif] = useState(false);
@@ -21,12 +21,6 @@ export default function Navbar() {
     message: null
   })
   const navigate = new useNavigate();
-  const cookies = new Cookies();
-
-  // API
-  const API = axios.create({
-    baseURL: process.env.REACT_APP_URL_API,
-  });
 
   const handleclose = (event) => {
     setOpenNotif(false);
@@ -43,12 +37,7 @@ export default function Navbar() {
   }
 
   const handleLogout = async() => {
-    await API.postForm('logout', {}, {
-      headers: {
-        Authorization: 'Bearer ' + cookies.get('__token_'),
-        Accept: 'application/json',
-      }
-    }).then((res) => {
+    await API.post('logout').then((res) => {
       if (res.status !== 200) return
 
       setMsgResponse({
@@ -68,7 +57,6 @@ export default function Navbar() {
       }, 3000)
     })
       localStorage.removeItem('__user');
-      cookies.remove('__token_');
     
 
       return window.location.reload()

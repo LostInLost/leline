@@ -22,13 +22,16 @@ const LoginPage = () => {
   // Handle Login
   const API = axios.create({
     baseURL: process.env.REACT_APP_URL_API,
+    withCredentials: true
   });
   const URL = process.env.REACT_APP_URL_MOBILE;
 
   const handleSubmit = async(event) => {
     event.preventDefault();
     setLoad(true);
-    axios.get(process.env.REACT_APP_URL_COOKIE).then(async () => {
+    await axios.get(process.env.REACT_APP_URL_COOKIE, {
+      withCredentials: true
+    })
       setSuccess({
         display: 'none  '
       })
@@ -38,7 +41,6 @@ const LoginPage = () => {
           email: email,
           password: password,
         },
-        {}
       )
         .then((res) => {
           if (res.status != 200) return;
@@ -46,13 +48,18 @@ const LoginPage = () => {
           const dataUser = {
             username: res.data.data.username,
             avatar: res.data.data.photo,
-            tag: res.data.data.tag,
           }
           console.log(dataUser)
           localStorage.setItem('__user', JSON.stringify(dataUser))
           cookies.set('__token_', res.data.token, {
             secure: true,
           })
+          // cookies.set('csrf_token', res.data.csrf_token, {
+          //   secure: true,
+          // })
+          // cookies.set('u_session', res.data.user_session, {
+          //   secure: true,
+          // })
 
           setSuccess({
             display: 'flex',
@@ -77,7 +84,6 @@ const LoginPage = () => {
             message: 'Username or Password not match',
           });
         });
-    });
   };
 
   useEffect(() => {

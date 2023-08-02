@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { Box, Grid, Card, CardMedia, FormControlLabel, Checkbox, CardContent, Typography, Stack, TextField, FormControl, Button, Divider, useScrollTrigger, Alert } from '@mui/material';
-import axios from 'axios';
+import {API} from '../Services/Api'
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,9 +26,6 @@ const RegisterPage = () => {
   const [isErrorRePassword, setErrorRePassword] = useState(defaultNoError);
   const [role, setRole] = useState(false);
   const URL = process.env.REACT_APP_URL_MOBILE;
-  const API = axios.create({
-    baseURL: process.env.REACT_APP_URL_API,
-  });
   const navigate = new useNavigate()
 
   // Controlling Handle
@@ -43,12 +40,7 @@ const RegisterPage = () => {
       re_password: rePassword,
       role: role ? 1 : 0
     };
-    await axios.get(process.env.REACT_APP_URL_COOKIE).then(async () => {
-      await API.postForm('register', formData, {
-        headers: {
-          Accept: 'application/json',
-        },
-      })
+      await API.postForm('register', formData)
         .then((res) => {
           if (res.status !== 200) return;
 
@@ -95,7 +87,6 @@ const RegisterPage = () => {
             });
           }
         });
-    });
   };
 
   const handleRePassword = (value) => {

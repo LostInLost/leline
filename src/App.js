@@ -11,6 +11,7 @@ import Page404 from './Layouts/PageError';
 import Loading from './Layouts/Loading';
 import PageError from './Layouts/PageError';
 import Profile from './Pages/Dashboard/Profile';
+import { API } from './Services/Api';
 const HomePage = lazy(() => import('./Pages/HomePage'));
 const RegisterPage = lazy(() => import('./Pages/RegisterPage'));
 const LoginPage = lazy(() => import('./Pages/LoginPage'));
@@ -18,28 +19,25 @@ const Dashboard = lazy(() => import('./Layouts/DashboardUser'));
 const VerificationUsers = lazy(() => import('./Pages/Dashboard/Admin/VerificationUsers'))
 function App() {
   // const navigate = useNavigate()
-  const API = axios.create({
-    baseURL: process.env.REACT_APP_URL_API,
-  });
+  // const API = axios.create({
+  //   baseURL: process.env.REACT_APP_URL_API,
+  //   withCredentials: true
+  // });
   const userData = JSON.parse(localStorage.getItem('__user'))
   const [ErrorCode, setErrCode] = useState(404);
 
   const getUserInfo = async () => {
     let data;
-    await API.get('user', {
-      headers: {
-        Authorization: `Bearer ${cookies.get('__token_')}`,
-      },
-    })
+    await API.get('user')
       .then((res) => {
-        const user = new Object()
-        user.username = res.data.user?.username
-        user.avatar = res.data.user?.photo
+        const user = new Object();
+        user.username = res.data.user?.username;
+        user.avatar = res.data.user?.photo;
         localStorage.setItem('__user', JSON.stringify(user));
         data = json(res.data);
       })
       .catch((err) => {
-        console.log(err)
+        console.log(err);
         if (err.response?.status === 401) {
           setErrCode(401);
           throw (window.location.href = '/');
@@ -103,6 +101,10 @@ function App() {
         },
       ],
     },
+    {
+      path: '*',
+      element: <PageError errorCode={404} />
+    }
   ]);
 
   return (

@@ -6,8 +6,7 @@ import styled from "@emotion/styled"
 import { useState } from "react"
 import Profile from "../Pages/Dashboard/Profile"
 import { AccountBox, DensityMedium, Home, PowerSettingsNew, VerifiedUser } from "@mui/icons-material"
-import axios from "axios"
-import { Cookies } from "react-cookie"
+import { API, cookies } from '../Services/Api'
 
 
 export default function DashboardUser() {
@@ -15,10 +14,6 @@ export default function DashboardUser() {
     const data = useLoaderData()
     const params = useParams()
     const navigate = useNavigate()
-    const cookies = new Cookies();
-     const API = axios.create({
-    baseURL: process.env.REACT_APP_URL_API,
-  });
     const [anchorDashboard, setAnchorDashboard] = useState(null);
     const [openDashboard, setOpenDashboard] = useState(false);
     const userData = JSON.parse(localStorage.getItem('__user'))
@@ -28,12 +23,7 @@ export default function DashboardUser() {
     }
 
     const handleLogout = async() => {
-    await API.postForm('logout', {}, {
-      headers: {
-        Authorization: 'Bearer ' + cookies.get('__token_'),
-        Accept: 'application/json',
-      }
-    }).then((res) => {
+    await API.post('logout').then((res) => {
       if (res.status !== 200) return
         localStorage.removeItem('__user');
         cookies.remove('__token_');
@@ -43,7 +33,6 @@ export default function DashboardUser() {
 
     })
       
-    
 
       
   }

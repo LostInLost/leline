@@ -3,9 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router-dom";
 import ButtonJoy from "@mui/joy/Button";
 import EditIcon from '@mui/icons-material/Edit';
-import { Cookies } from "react-cookie";
+import { API, cookies } from "../../Services/Api";
 import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
-import axios from "axios";
 import { Done, Verified } from "@mui/icons-material";
 
 export default function Profile(){
@@ -45,17 +44,9 @@ export default function Profile(){
     // End Error CallBack Variable 
 
     const navigate = useNavigate()
-    const cookies = new Cookies();
-     const API = axios.create({
-    baseURL: process.env.REACT_APP_URL_API,
-    });
 
     const getUserInfo = async() => {
-        await API.get('user', {
-            headers: {
-                Authorization: `Bearer ${cookies.get('__token_')}`
-            }
-        })
+        await API.get('user')
         .then((res) => {
             console.log(res.data)
             return data = res.data
@@ -103,13 +94,7 @@ export default function Profile(){
         await formData.append('nik', nik)
         await formData.append('no_ktp', ktp)
 
-        await API.postForm('user/verification', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-                Authorization: `Bearer ${cookies.get('__token_')}`,
-                Accept: 'application/json'
-            }
-        })
+        await API.postForm('user/verification', formData)
         .then((res) => {
             setSubmitting(false)
             if (res?.status !== 200) return enqueueSnackbar(`Upload Credentials Not Successfully[${res.status}]`, {
@@ -151,16 +136,10 @@ export default function Profile(){
     }
 
     const handleLogout = async() => {
-    await API.postForm('logout', {}, {
-      headers: {
-        Authorization: 'Bearer ' + cookies.get('__token_'),
-        Accept: 'application/json',
-      }
-    }).then((res) => {
+    await API.post('logout').then((res) => {
       if (res.status !== 200) return
         localStorage.removeItem('__user');
-      cookies.remove('__token_');
-      return window.location.reload()
+      return window.location.reload() 
 
     }).catch((err) => {
         console.log(err)
@@ -181,7 +160,9 @@ export default function Profile(){
         await API.postForm('user', formData, {
             headers: {
                 Authorization: `Bearer ${cookies.get('__token_')}`,
-                'Content-Type': 'multipart/form-data'
+                'Content-Type': 'multipart/form-data',
+                Accept: 'application/json',
+                USession: cookies.get('u_session')
             }
         })
         .then((res) => {

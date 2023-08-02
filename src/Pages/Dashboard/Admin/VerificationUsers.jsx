@@ -2,13 +2,12 @@ import { Box, Button, CircularProgress, Grid, LinearProgress, Modal, Skeleton, T
 import { DataGrid } from "@mui/x-data-grid";
 import { useEffect, useState } from "react";
 import { Cookies } from "react-cookie";
-import axios from "axios";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
+import { API } from '../../../Services/Api'
+import { useNavigate } from "react-router-dom";
 export default function VerificationUsers() {
     const cookies = new Cookies();
-    const API = axios.create({
-    baseURL: process.env.REACT_APP_URL_API,
-    });
+    const navigate = useNavigate()
 
     const [loadingTable, setLoadingTable] = useState(true)
     const [loadingUser, setLoadingUser] = useState(false)
@@ -42,19 +41,14 @@ export default function VerificationUsers() {
     ]
 
     const loadUser = async() => {
-        await API.get('admin/dashboard/users', {
-            headers: {
-                Authorization: `Bearer ${cookies.get('__token_')}`,
-                'Content-Type': 'application/json'
-            }
-        })
+        await API.get('admin/dashboard/users')
         .then((res) => {
             if (res.status !== 200) return enqueueSnackbar('Error Something' + `[${res.status}]`, {
                 variant: 'error'
             })
 
             setLoadingTable(false)
-            return setUsers(res.data?.users)
+            return setUsers(res.data?.users ?? [])
         })
         .catch((err) => {
             return enqueueSnackbar('Error Something' + `[${err.response.status}]`, {
@@ -82,13 +76,13 @@ export default function VerificationUsers() {
             <Grid item xs={12}>
                 <DataGrid sx={{ width: '100%' }}
                 disableRowSelectionOnClick
-                rows={users.map((data, i) => {
+                rows={users?.map((data, i) => {
                     return {
                         id: data.id,
                         number: i+1,
                         username: data.username,
                     }
-                })}
+                }) ?? []}
                 columns={columnsVerificationUsers}
                 autoHeight
                 />
