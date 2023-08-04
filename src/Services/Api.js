@@ -8,7 +8,6 @@ import { Cookies } from "react-cookie";
     headers: {
         Authorization: `Bearer ${cookies.get('__token_')}`,
         Accept: 'application/json',
-        USession: cookies.get('u_session')
     }
   });
 

@@ -18,11 +18,6 @@ const LoginPage = lazy(() => import('./Pages/LoginPage'));
 const Dashboard = lazy(() => import('./Layouts/DashboardUser'));
 const VerificationUsers = lazy(() => import('./Pages/Dashboard/Admin/VerificationUsers'))
 function App() {
-  // const navigate = useNavigate()
-  // const API = axios.create({
-  //   baseURL: process.env.REACT_APP_URL_API,
-  //   withCredentials: true
-  // });
   const userData = JSON.parse(localStorage.getItem('__user'))
   const [ErrorCode, setErrCode] = useState(404);
 
@@ -57,6 +52,11 @@ function App() {
   const router = createBrowserRouter([
     {
       path: '/',
+      loader: () => {
+        if (!localStorage.getItem('__token_')) return true
+
+        return getUserInfo()
+      },
       element: <Navbar />,
       children: [
         {

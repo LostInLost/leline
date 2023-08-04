@@ -1,5 +1,5 @@
 import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, LinearProgress, Modal, Stack, TextField, Typography } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router-dom";
 import ButtonJoy from "@mui/joy/Button";
 import EditIcon from '@mui/icons-material/Edit';
@@ -7,21 +7,120 @@ import { API, cookies } from "../../Services/Api";
 import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
 import { Done, Verified } from "@mui/icons-material";
 
+function formReducer(state, action)
+{
+
+    if (action.type === 'clear_validation') return {
+        avatar: state.avatar,
+        name: {
+            ...state.name,
+            isError: false,
+            errMsg: []
+        },
+        username: {
+            ...state.username,
+            isError: false,
+            errMsg: []
+        },
+        email: {
+            ...state.email,
+            isError: false,
+            errMsg: []
+        },
+        phone: {
+            ...state.phone,
+            isError: false,
+            errMsg: []
+        },
+        password: {
+            ...state.password,
+            isError: false,
+            errMsg: []
+        }
+    }
+    if (action.changeValue) switch (action.changeValue) {
+        case 'avatar': return {
+            ...state,
+            avatar: action.avatar
+        }
+        case 'name': return {
+            ...state,
+            name : {
+                ...state.name,
+                ...action.name
+            }
+        }
+        case 'username': return {
+            ...state,
+            username : {
+                ...state.username,
+                ...action.username
+            }
+        }
+        case 'email': return {
+            ...state,
+            email : {
+                ...state.email,
+                ...action.email
+            }
+        }
+        case 'phone': return {
+            ...state,
+            phone : {
+                ...state.phone,
+                ...action.phone
+            }
+        }
+        case 'password': return {
+            ...state,
+            password : {
+                ...state.password,
+                ...action.password
+            }
+        }
+    }
+
+    
+
+}
+
 export default function Profile(){
+    const userFormState = {
+        avatar: null,
+        name: {
+            value: '',
+            isError: false,
+            errMsg: []
+        },
+        username: {
+            value: '',
+            isError: false,
+            errMsg: []
+        },
+        email: {
+            value: '',
+            isError: false,
+            errMsg: []
+        },
+        phone: {
+            value: '',
+            isError: false,
+            errMsg: []
+        },
+        password: {
+            value: '',
+            isError: false,
+            errMsg: []
+        }
+    }
+    const [userForm, setUserForm] = useReducer(formReducer, userFormState)
     const loaderData = useRouteLoaderData('dashboard')
     let data = loaderData
-    const [username, setUsername] = useState('')
-    const [name, setName] = useState('')
-    const [phone, setPhone] = useState('')
     const [user, setUser] = useState({})
-    const [avatar, setAvatar] = useState(null)
     const inputAvatar = useRef(null)
-    const [email, setEmail] = useState('')
     const [nik, setNik] = useState('')
     const [ktp, setKtp] = useState('')
-    
     const photoKTPRef = useRef()
-    const [password, setPassword] = useState('')
 
     // DOM Action Variable 
     const [credentialOpen, setCredentialOpen] = useState(false)
@@ -36,34 +135,17 @@ export default function Profile(){
     const [errNik, setErrNik] = useState([])
     const [errKtp, setErrKtp] = useState([])
     const [errPhotoKtp, setErrPhotoKtp] = useState([]) 
-    const [errName, setErrName] = useState([])
-    const [errUsername, setErrUsername] = useState([])
-    const [errPhone, setErrPhone] = useState([])
-    const [errEmail, setErrEmail] = useState([])
-    const [errPassword, setErrPassword] = useState([])
     // End Error CallBack Variable 
 
     const navigate = useNavigate()
 
-    const getUserInfo = async() => {
-        await API.get('user')
-        .then((res) => {
-            console.log(res.data)
-            return data = res.data
-        })
-        .catch((err) => {
-            if (err.response?.status === 502) return enqueueSnackbar('Bad Gateaway[502]', {
-                variant: 'error'
-            })
-        })
-    }
 
     const setProfile = () => {
-        setUsername(data.user?.username)
-        setName(data.user?.name)
-        setEmail(data.user?.email)
-        setPhone(data.user?.phone)
-        setAvatar(`${process.env.REACT_APP_URL_IMAGE}profiles/${data.user?.photo}`)
+        setUserForm({changeValue: 'username', username: {value: data.user?.username}})
+        setUserForm({changeValue: 'name', name: {value: data.user?.name}})
+        setUserForm({changeValue: 'email', email: {value: data.user?.email}})
+        setUserForm({changeValue: 'phone', phone: {value: data.user?.phone}})
+        setUserForm({changeValue: 'avatar', avatar: `${process.env.REACT_APP_URL_IMAGE}profiles/${data.user?.photo}`})
         }
 
 
@@ -71,15 +153,11 @@ export default function Profile(){
         setErrKtp([])
         setErrNik([])
         setErrPhotoKtp([])
-        setErrName([])
-        setErrEmail([])
-        setErrUsername([])
-        setErrPhone([])
-        setErrPassword([])
+        setUserForm({type: 'clear_validation'})
         inputAvatar.current.value = null
     }
     const handleAvatar = (target) => {
-        setAvatar(target)
+        setUserForm({changeValue: 'avatar', avatar: target})
     }
 
     const openCredential = () => {
@@ -116,7 +194,6 @@ export default function Profile(){
                 setErrPhotoKtp(err.response.data.errors.photo ?? [])
                 setErrNik(err.response.data.errors.nik ?? [])
                 setErrKtp(err.response.data.errors.no_ktp ?? [])
-                console.log(err.response.data.errors)
                 setSubmitting(false)
                 return
             }
@@ -125,7 +202,7 @@ export default function Profile(){
 
     
     const makeSureSubmitProfiles = () => {
-        if (email !== data.user?.email || password !== '') return setOpenDialogSubmit(true)
+        if (userForm.email.value !== data.user?.email || userForm.password.value !== '') return setOpenDialogSubmit(true)
 
         return submitProfiles()
     }
@@ -139,6 +216,7 @@ export default function Profile(){
     await API.post('logout').then((res) => {
       if (res.status !== 200) return
         localStorage.removeItem('__user');
+        cookies.set('__token_', null)
       return window.location.reload() 
 
     }).catch((err) => {
@@ -148,14 +226,13 @@ export default function Profile(){
 
     const submitProfiles = async() => {
         setSubmitProfile(true)
-
         const formData = new FormData()
         if (inputAvatar.current.value !== null || inputAvatar.current.value !== '') await formData.append('photo', inputAvatar.current.files[0] ?? null)
-        await formData.append('username', username)
-        await formData.append('name', name)
-        await formData.append('email', email)
-        if (phone !== '') await formData.append('phone', phone)
-        if (password !== '') await formData.append('password', password)
+        await formData.append('username', userForm.username.value)
+        await formData.append('name', userForm.name.value)
+        await formData.append('email', userForm.email.value)
+        if (userForm.phone.value !== '') await formData.append('phone', userForm.phone.value)
+        if (userForm.password.value !== '') await formData.append('password', userForm.password.value)
 
         await API.postForm('user', formData, {
             headers: {
@@ -167,9 +244,9 @@ export default function Profile(){
         })
         .then((res) => {
             if (res.status !== 200) return
-            if (email !== data.user?.email || password !== '') return handleLogout()
+            if (userForm.email.value !== data.user?.email || userForm.password.value !== '') return handleLogout()
             inputAvatar.current.value = null
-            navigate('/dashboard/profiles/' + username)
+            navigate('/dashboard/profiles/' + userForm.username.value)
             setSubmitProfile(false)
             clearValidation()
             setIsHasChanges(false)
@@ -183,11 +260,43 @@ export default function Profile(){
 
             let errors = err.response.data.errors
 
-            setErrName(errors.name ?? [])
-            setErrEmail(errors.email ?? [])
-            setErrUsername(errors.username ?? [])
-            setErrPassword(errors.password ?? [])
-            setErrPhone(errors.phone ?? []) 
+            setUserForm({
+                changeValue: 'name',
+                name: {
+                    isError: !errors.name ? false : true,  
+                    errMsg: errors?.name ?? []
+                }
+            })
+
+            setUserForm({
+                changeValue: 'username',
+                username: {
+                    isError: !errors.username ? false : true,  
+                    errMsg: errors?.username ?? []
+                }
+            })
+
+            setUserForm({
+                changeValue: 'email',
+                email: {
+                    isError: !errors.email ? false : true,  
+                    errMsg: errors?.email ?? []
+                }
+            })
+            setUserForm({
+                changeValue: 'phone',
+                phone: {
+                    isError: !errors.phone ? false : true,  
+                    errMsg: errors?.phone ?? []
+                }
+            })
+            setUserForm({
+                changeValue: 'password',
+                password: {
+                    isError: !errors.password ? false : true,  
+                    errMsg: errors?.password ?? []
+                }
+            })
             setSubmitProfile(false)
             if (errors?.photo?.length > 0) return enqueueSnackbar(errors?.photo[0] ?? null, {
                 variant: 'error'
@@ -209,7 +318,7 @@ export default function Profile(){
 
     const checkValidSubmitProfiles = () => {
         let user = data.user
-        return setIsHasChanges(name !== user?.name || (username !== user?.username && username.length !== 0) || email !== user?.email || password !== '' || phone !== user?.phone || inputAvatar.current.value !== '')
+        return setIsHasChanges(userForm.name.value !== user?.name || userForm.username.value !== user?.username || userForm.email.value !== user?.email || userForm.password.value !== '' || userForm.phone.value !== user?.phone || inputAvatar.current.value !== '')
     }
 
     const TextCredentialButton = () => {
@@ -226,29 +335,27 @@ export default function Profile(){
 
     useEffect(() => {
         checkValidSubmitProfiles()
-    }, [name, username, email, phone, password, inputAvatar.current?.value])
+    }, [userForm, inputAvatar.current?.value])
     return (
         <>
         <Typography component={'h1'} fontSize={'36px'}>Profile</Typography>
         <Grid container columnSpacing={2}>
             <Grid item xs={12} justifyContent={'center'} display={'flex'} flexDirection={'column'} alignItems={'center'}>
-                <input ref={inputAvatar} type="file" style={{ display: 'none' }} onChange={(e) => {handleAvatar( URL.createObjectURL(e.target.files[0]));}} />
-                {/* <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={user?.avatar !== 'avatar.png'
-                 ? user?.avatar : undefined} /> */}
-                    <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={avatar ? avatar : user?.photo}/>
+                <input ref={inputAvatar} type="file" style={{ display: 'none' }} onChange={(e) => {handleAvatar( inputAvatar.current.value ? URL.createObjectURL(e.target?.files[0]) : `${process.env.REACT_APP_URL_IMAGE}profiles/${data.user?.photo}`);}} />
+                    <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={user?.avatar === 'avatar.png' ? user?.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={userForm.avatar ? userForm.avatar : user?.photo}/>
                 <br />
                 <Typography component={'h2'} sx={{ ':hover': {cursor: 'pointer'} }} onClick={() => inputAvatar.current.click()}>Edit Photo Profile <EditIcon sx={{ fontSize: '12px' }} /></Typography>
             </Grid> 
             <Grid item xs={12} sx={{ marginTop: '1rem' }} >
                 <Stack direction={'column'}  sx={{ justifyContent: 'center', display: 'flex', }} flexWrap={'wrap'} >
-                    <TextField required type="text" error={errUsername.length !== 0} helperText={errUsername[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={username} label={'Username'} onChange={(e) => setUsername(e.target.value)} />
-                    <TextField required type="text" error={errName.length !== 0} helperText={errName[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={name} label={'Name'} onChange={(e) => setName(e.target.value)} />
+                    <TextField required type="text" error={userForm.username.isError} helperText={userForm.username?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.username.value} label={'Username'} onChange={(e) => setUserForm({changeValue: 'username', username: {value: e.target.value}})} />
+                    <TextField required type="text" error={userForm.name.isError} helperText={userForm.name?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.name.value} label={'Name'} onChange={(e) => setUserForm({changeValue: 'name', name: {value: e.target.value}})} />
                     {data.user?.role !== 2 ?
-                    <TextField required error={errPhone.length !== 0} helperText={errPhone[0] ?? null} type={'number'} variant="outlined" color={!phone || phone === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={phone} label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setPhone(e.target.value)} />
+                    <TextField required error={userForm.phone.isError} helperText={userForm.phone.errMsg[0] ?? null} type={'number'} variant="outlined" color={!userForm.phone.value || userForm.phone.value === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={userForm.phone.value} label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setUserForm({changeValue: 'phone', phone: {value: e.target.value}})} />
                     : undefined
                     }
-                    <TextField required type="email" error={errEmail.length !== 0} helperText={errEmail[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={email} label={'Email'} onChange={(e) => setEmail(e.target.value)} />
-                    <TextField error={errPassword.length !== 0} helperText={errPassword[0] ?? 'Please fill if you want change'} type="password" variant="outlined" sx={{ margin: '1rem' }} value={password} label={'Password'} onChange={(e) => setPassword(e.target.value)} />
+                    <TextField required type="email" error={userForm.email.isError} helperText={userForm.email?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.email.value} label={'Email'} onChange={(e) => setUserForm({changeValue: 'email', email: {value: e.target.value}})} />
+                    <TextField error={userForm.password.isError} helperText={userForm.password.errMsg[0] ?? 'Please fill if you want change'} type="password" variant="outlined" sx={{ margin: '1rem' }} value={userForm.password.value} label={'Password'} onChange={(e) => setUserForm({changeValue: 'password', password: {value: e.target.value}})} />
                 </Stack>
             </Grid>
             <Grid item xs={12} sx={{ marginTop: '1rem' }}>
