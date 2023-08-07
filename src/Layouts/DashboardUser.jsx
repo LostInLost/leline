@@ -6,7 +6,7 @@ import styled from "@emotion/styled"
 import { useState } from "react"
 import Profile from "../Pages/Dashboard/Profile"
 import { AccountBox, DensityMedium, Home, PowerSettingsNew, VerifiedUser } from "@mui/icons-material"
-import { API, cookies } from '../Services/Api'
+import { logoutUser } from "../Services/Auth"
 
 
 export default function DashboardUser() {
@@ -21,21 +21,7 @@ export default function DashboardUser() {
         setOpenDashboard(!openDashboard)
         setAnchorDashboard(target)
     }
-
-    const handleLogout = async() => {
-    await API.post('logout').then((res) => {
-      if (res.status !== 200) return
-        localStorage.removeItem('__user');
-        cookies.remove('__token_');
-        return window.location.reload()
-      })
-        .catch((err) => {
-
-    })
       
-
-      
-  }
 
     return (
         <>
@@ -86,7 +72,7 @@ export default function DashboardUser() {
                               }
                                 
                                 <Divider />
-                        <MenuItem onClick={() => handleLogout()}>
+                        <MenuItem onClick={() => logoutUser()}>
                           <ListItemIcon>
                             <PowerSettingsNew fontSize="small" />
                           </ListItemIcon>

@@ -5,6 +5,7 @@ import { Notifications, Search, FilterList, Close, ArrowCircleLeft, ArrowBackIos
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { API, cookies } from '../Services/Api'
+import { logoutUser } from '../Services/Auth';
 import axios from 'axios';
 export default function Navbar() {
   const [openNotif, setOpenNotif] = useState(false);
@@ -36,49 +37,19 @@ export default function Navbar() {
     setOpenMyProfile(true)
   }
 
-  const handleLogout = async() => {
-    await API.post('logout').then((res) => {
-      if (res.status !== 200) return
 
-      setMsgResponse({
-        type: 'success',
-        show: true,
-        message: 'Logout Successfully'
-      })
-
-    }).catch((err) => {
-      setMsgResponse({
-        type: 'error',
-        show: true,
-        message: 'Logout Failed, please check credentials [' + err.response.status + ']'
-      })
-      setTimeout(() => {
-        setMsgResponse({show: false})
-      }, 3000)
-    })
-      localStorage.removeItem('__user');
-    
-
-      return window.location.reload()
-  }
 
   const toLogin = () => {
     return navigate('leline/login');
   };
-  const tes = async () => {
-    await API.get('tes', {})
-      .then((res) => {
-        console.log(res.data);
-      })
-      .catch((err) => console.log(err));
-  };
+
 
   const toProfile = (username) => {
     return navigate(`dashboard/profiles/${username}`)
   }
 
   useEffect(() => {
-    if (!cookies.get('__token_')) {localStorage.clear()}
+    // if (!cookies.get('__token_')) {localStorage.clear()}
     setUser( localStorage.getItem('__user') ? JSON.parse(localStorage.getItem('__user')) : {});
     console.log(user)
   }, []);
@@ -211,7 +182,7 @@ export default function Navbar() {
                           <ListItemText onClick={() => toProfile(userData.username)} >My Profile</ListItemText>
                         </MenuItem>
                         <Divider />
-                        <MenuItem onClick={(e) => handleLogout()}>
+                        <MenuItem onClick={(e) => logoutUser()}>
                           <ListItemIcon>
                             <PowerSettingsNew fontSize="small" />
                           </ListItemIcon>

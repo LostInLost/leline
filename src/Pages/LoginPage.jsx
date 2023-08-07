@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import { Cookies, useCookies } from 'react-cookie';
 import { Link, useNavigate } from 'react-router-dom';
+import { setAuthenticated } from '../Services/Auth';
 
 const LoginPage = () => {
   const [email, setEmail] = new useState('');
   const [password, setPassword] = new useState('');
-  const [ref, setRef] = new useState(null);
   const cookies = new Cookies();
   const [isLoad, setLoad] = useState(false);
   const navigate = new useNavigate()
@@ -51,15 +51,7 @@ const LoginPage = () => {
           }
           console.log(dataUser)
           localStorage.setItem('__user', JSON.stringify(dataUser))
-          cookies.set('__token_', res.data.token, {
-            secure: true,
-          })
-          // cookies.set('csrf_token', res.data.csrf_token, {
-          //   secure: true,
-          // })
-          // cookies.set('u_session', res.data.user_session, {
-          //   secure: true,
-          // })
+          setAuthenticated(true)
 
           setSuccess({
             display: 'flex',

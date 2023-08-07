@@ -6,6 +6,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { API, cookies } from "../../Services/Api";
 import { SnackbarProvider, enqueueSnackbar,  } from "notistack";
 import { Done, Verified } from "@mui/icons-material";
+import { Revalidate, logoutUser, setRevalidate } from "../../Services/Auth";
 
 function formReducer(state, action)
 {
@@ -80,11 +81,14 @@ function formReducer(state, action)
         }
     }
 
-    
 
 }
 
 export default function Profile(){
+    let data = useRouteLoaderData('dashboard')
+    const GetUserLoad = () => {
+        data = useRouteLoaderData('dashboard')
+    }
     const userFormState = {
         avatar: null,
         name: {
@@ -114,8 +118,6 @@ export default function Profile(){
         }
     }
     const [userForm, setUserForm] = useReducer(formReducer, userFormState)
-    const loaderData = useRouteLoaderData('dashboard')
-    let data = loaderData
     const [user, setUser] = useState({})
     const inputAvatar = useRef(null)
     const [nik, setNik] = useState('')
@@ -125,7 +127,7 @@ export default function Profile(){
     // DOM Action Variable 
     const [credentialOpen, setCredentialOpen] = useState(false)
     const [Submitting, setSubmitting] = useState(false)
-    const [SubmittingProfile, setSubmitProfile] = useState(false)
+    const [SubmittingProfile, setSubmitProfile] = useState(true)
     const [isInputCredentials, setIsInputCredentials] = useState(false)
     const [isHasChanges, setIsHasChanges] = useState(false)
     const [openDialogSubmit, setOpenDialogSubmit] = useState(false)
@@ -144,7 +146,7 @@ export default function Profile(){
         setUserForm({changeValue: 'username', username: {value: data.user?.username}})
         setUserForm({changeValue: 'name', name: {value: data.user?.name}})
         setUserForm({changeValue: 'email', email: {value: data.user?.email}})
-        setUserForm({changeValue: 'phone', phone: {value: data.user?.phone}})
+        setUserForm({changeValue: 'phone', phone: {value: data.user?.phone ?? ''}})
         setUserForm({changeValue: 'avatar', avatar: `${process.env.REACT_APP_URL_IMAGE}profiles/${data.user?.photo}`})
         }
 
@@ -212,19 +214,9 @@ export default function Profile(){
         setOpenDialogSubmit(false)
     }
 
-    const handleLogout = async() => {
-    await API.post('logout').then((res) => {
-      if (res.status !== 200) return
-        localStorage.removeItem('__user');
-        cookies.set('__token_', null)
-      return window.location.reload() 
-
-    }).catch((err) => {
-        console.log(err)
-    })
-  }
 
     const submitProfiles = async() => {
+        setRevalidate(false)
         setSubmitProfile(true)
         const formData = new FormData()
         if (inputAvatar.current.value !== null || inputAvatar.current.value !== '') await formData.append('photo', inputAvatar.current.files[0] ?? null)
@@ -236,27 +228,28 @@ export default function Profile(){
 
         await API.postForm('user', formData, {
             headers: {
-                Authorization: `Bearer ${cookies.get('__token_')}`,
                 'Content-Type': 'multipart/form-data',
                 Accept: 'application/json',
-                USession: cookies.get('u_session')
             }
         })
         .then((res) => {
             if (res.status !== 200) return
-            if (userForm.email.value !== data.user?.email || userForm.password.value !== '') return handleLogout()
-            inputAvatar.current.value = null
-            navigate('/dashboard/profiles/' + userForm.username.value)
+            if (userForm.email.value !== data.user?.email || userForm.password.value !== '') {
+                logoutUser(true)
+            }
+            setRevalidate(true)
+            setIsHasChanges(false)
             setSubmitProfile(false)
             clearValidation()
-            setIsHasChanges(false)
-            return enqueueSnackbar(res.data.message, {
+            enqueueSnackbar(res.data.message, {
                 variant: 'success'
             })
+            checkValidSubmitProfiles()
+            return navigate('/dashboard/profiles/' + userForm.username.value)
+            // GetUserLoad()
         })
         .catch((err) => {
-            console.log(err)
-            if (err.response.status !== 400) return
+            if (err.response?.status !== 400) return
 
             let errors = err.response.data.errors
 
@@ -318,7 +311,7 @@ export default function Profile(){
 
     const checkValidSubmitProfiles = () => {
         let user = data.user
-        return setIsHasChanges(userForm.name.value !== user?.name || userForm.username.value !== user?.username || userForm.email.value !== user?.email || userForm.password.value !== '' || userForm.phone.value !== user?.phone || inputAvatar.current.value !== '')
+        return setIsHasChanges(userForm.name.value !== user?.name || userForm.username.value !== user?.username || userForm.email.value !== user?.email || userForm.password.value !== '' || userForm.phone.value !== (user?.phone ?? '') || inputAvatar.current.value !== '')
     }
 
     const TextCredentialButton = () => {
@@ -330,12 +323,15 @@ export default function Profile(){
 
     useEffect(() => {
         setProfile()
+        checkValidSubmitProfiles()
+        setSubmitProfile(false)
         setUser( localStorage.getItem('__user') ? JSON.parse(localStorage.getItem('__user')) : {});
     }, [])
 
     useEffect(() => {
         checkValidSubmitProfiles()
-    }, [userForm, inputAvatar.current?.value])
+        console.log(userForm.phone.value)
+    }, [userForm, data, inputAvatar.current?.value])
     return (
         <>
         <Typography component={'h1'} fontSize={'36px'}>Profile</Typography>
@@ -348,10 +344,10 @@ export default function Profile(){
             </Grid> 
             <Grid item xs={12} sx={{ marginTop: '1rem' }} >
                 <Stack direction={'column'}  sx={{ justifyContent: 'center', display: 'flex', }} flexWrap={'wrap'} >
-                    <TextField required type="text" error={userForm.username.isError} helperText={userForm.username?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.username.value} label={'Username'} onChange={(e) => setUserForm({changeValue: 'username', username: {value: e.target.value}})} />
+                    <TextField required type="text" error={userForm.username.isError} helperText={userForm.username?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.username.value} label={'Username'} onChange={(e) => {setUserForm({changeValue: 'username', username: {value: e.target.value}})}} />
                     <TextField required type="text" error={userForm.name.isError} helperText={userForm.name?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.name.value} label={'Name'} onChange={(e) => setUserForm({changeValue: 'name', name: {value: e.target.value}})} />
                     {data.user?.role !== 2 ?
-                    <TextField required error={userForm.phone.isError} helperText={userForm.phone.errMsg[0] ?? null} type={'number'} variant="outlined" color={!userForm.phone.value || userForm.phone.value === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={userForm.phone.value} label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setUserForm({changeValue: 'phone', phone: {value: e.target.value}})} />
+                    <TextField required error={userForm.phone.isError} helperText={userForm.phone.errMsg[0] ?? null} type={'number'} variant="outlined" color={!userForm.phone.value || userForm.phone.value === '' ? 'warning' : undefined} sx={{ margin: '1rem' }} value={userForm.phone.value } label={'Phone'} placeholder="Input Phone Number" onChange={(e) => setUserForm({changeValue: 'phone', phone: {value: e.target.value}})} />
                     : undefined
                     }
                     <TextField required type="email" error={userForm.email.isError} helperText={userForm.email?.errMsg[0] ?? null} variant="outlined" sx={{ margin: '1rem' }} value={userForm.email.value} label={'Email'} onChange={(e) => setUserForm({changeValue: 'email', email: {value: e.target.value}})} />

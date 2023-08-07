@@ -1,9 +1,10 @@
 import { Box, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
+import { ErrorCode } from "../Services/Auth";
 
-export default function PageError({errorCode}) {
-    const code = errorCode
+export default function PageError() {
+    const code = ErrorCode
     return (
         <>
         <Box sx={{ 

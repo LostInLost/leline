@@ -1,19 +1,96 @@
-import { Box, Button, CircularProgress, Grid, LinearProgress, Modal, Skeleton, Typography } from "@mui/material";
+import { Avatar, Box, Button, CircularProgress, Grid, LinearProgress, Modal, Skeleton, Stack, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { Cookies } from "react-cookie";
 import { SnackbarProvider, enqueueSnackbar } from "notistack";
 import { API } from '../../../Services/Api'
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+function userInfoReducer(state, action) {
+
+    if (action.changeValue) switch (action.changeValue)
+    {
+        case 'all': return {
+            username: action.username,
+            name: action.name,
+            avatar: action.avatar,
+            phone: action.phone,
+            credentials: {
+                no_ktp: action.credentials.no_ktp,
+                nik: action.credentials.nik,
+                photo: action.credentials.photo
+            }
+        }
+        case 'reset': return {
+        avatar: null,
+        username: null,
+        name: null,
+        phone: null,
+        credentials: {
+            no_ktp: null,
+            nik: null,
+            photo: null
+        }
+    }
+    }
+}
 export default function VerificationUsers() {
     const cookies = new Cookies();
     const navigate = useNavigate()
-
+    const userDetailState = {
+        avatar: null,
+        username: null,
+        name: null,
+        phone: null,
+        credentials: {
+            no_ktp: null,
+            nik: null,
+            photo: null
+        }
+    }
+    const [userInfo, setUserInfo] = useReducer(userInfoReducer, userDetailState)
     const [loadingTable, setLoadingTable] = useState(true)
-    const [loadingUser, setLoadingUser] = useState(false)
     const [users, setUsers] = useState([])
-    const [modalUser, setModalUser] = useState(true)
+    const [modalUser, setModalUser] = useState(false)
     const [userDetail, setUserDetail] = useState([])
+
+    const setAvatar = (value) => {
+        return `${process.env.REACT_APP_URL_IMAGE}profiles/${value}`
+    }
+
+    const closeModal = () => {
+        setUserInfo({
+                changeValue: 'reset'
+            })
+        return setModalUser(false)
+    }
+
+    const resetUserDetail = () => {
+        setUserDetail({changeValue: 'reset', userDetailState: userDetailState})
+    }
+    const loadUsersDetail = async(username) => {
+        setModalUser(true)
+        await API.get('http://localhost:8000/api/leline/admin/dashboard/users/' + username)
+        .then((res) => {
+            if (res.status !== 200) return
+            return setUserInfo({
+                changeValue: 'all',
+                avatar: setAvatar(res.data.user.photo),
+                name: res.data.user.name,
+                username: res.data.user.username,
+                phone: res.data.user.phone,
+                credentials: {
+                    no_ktp: res.data.user.credential?.no_ktp,
+                    nik: res.data.user.credential?.nik,
+                    photo: res.data.user.credential?.photo,
+                }
+            })
+        })
+        .catch((err) => {
+            console.log(err)
+        })
+    }
     const columnsVerificationUsers = [
         {
             field: 'number',
@@ -32,7 +109,7 @@ export default function VerificationUsers() {
             field: 'id',
             headerName: 'Action',
             renderCell: (cellValue) => (
-                <Button variant={'outlined'}>Details</Button>
+                <Button variant={'outlined'} onClick={() => loadUsersDetail(cellValue.row.username)}>Details</Button>
             ),
             flex: 2,
             headerAlign: 'center',
@@ -40,6 +117,25 @@ export default function VerificationUsers() {
         }
     ]
 
+    const downloadCredential = async() => {
+        await API.post('admin/dashboard/credentials', {
+            username: userInfo.username,
+        }, {
+            responseType: 'blob'
+        })
+        .then((res) => {
+            const blob = new Blob([res.data])
+            // console.log(imageType)
+            // console.log(URL.createObjectURL(blob))
+            const download = document.createElement('a')
+            download.href = URL.createObjectURL(blob)
+            download.download = `credential-${userInfo.username}.jpg` 
+            download.click()
+        })
+        .catch((err) => {
+            console.log(err)
+        })
+    }
     const loadUser = async() => {
         await API.get('admin/dashboard/users')
         .then((res) => {
@@ -48,13 +144,14 @@ export default function VerificationUsers() {
             })
 
             setLoadingTable(false)
-            return setUsers(res.data?.users ?? [])
+            return setUsers(res.data?.users?.data ?? [])
         })
         .catch((err) => {
             return enqueueSnackbar('Error Something' + `[${err.response.status}]`, {
                 variant: 'error'
             })
         })
+
     }
 
 
@@ -76,7 +173,7 @@ export default function VerificationUsers() {
             <Grid item xs={12}>
                 <DataGrid sx={{ width: '100%' }}
                 disableRowSelectionOnClick
-                rows={users?.map((data, i) => {
+                rows={users.map((data, i) => {
                     return {
                         id: data.id,
                         number: i+1,
@@ -104,27 +201,97 @@ export default function VerificationUsers() {
                  }}>
             <Typography variant={'caption'} sx={{ marginBottom: '0.5rem' }}>User Info</Typography>
             {/* <Skeleton variant="overlay"> */}
-                 <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
-                    <Typography variant={'body2'} >Username</Typography>
-                    {loadingUser ?
-                    <Skeleton variant="overlay" width={'100%'} />
+                 <Box display={'flex'} justifyContent={'center'} >
+                    {!userInfo.avatar ?
+                    <Skeleton variant={'circular'}>
+                        <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={userInfo.avatar === 'avatar.png' ? userInfo.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={userInfo.avatar ? userInfo.avatar : null}/>
+                    </Skeleton>
                     :
-                    <Typography variant={'subtitle'}>tes</Typography>
-                    }
-                 </div>
-                 <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
-                    <Typography variant={'body2'} >Name</Typography>
-                    <Skeleton variant="overlay" width={'100%'} />
-                    <Typography variant={'subtitle'}>tes</Typography>
-                 </div>
-                 <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                        <Avatar sx={{ bgcolor: 'grey', width: 72, height: 72 }}  children={userInfo.avatar === 'avatar.png' ? userInfo.username.toString().toUpperCase().split(' ')[0][0] : undefined} src={userInfo.avatar ? userInfo.avatar : null}/>
+                }
+                    
+                 </Box>
                     <Typography variant={'body2'} >Username</Typography>
-                    <Skeleton variant="overlay" width={'100%'} />
-                    <Typography variant={'subtitle'}>tes</Typography>
-                 </div>
-                <Typography variant={'caption'} sx={{ marginBottom: '0.5rem' }}>User Credentials</Typography>
+                    {!userInfo.username ?
+                    <Skeleton variant="overlay" width={'100%'}>
+                        <Typography variant={'overline'}>loading...</Typography>
+                    </Skeleton>
+                    :
+                    <Typography variant={'overline'}>{userInfo.username}</Typography>
+                    }
+                    <Typography variant={'body2'} >Name</Typography>
+                    {!userInfo.name ?
+                    <Skeleton variant="overlay" width={'100%'}>
+                        <Typography variant={'overline'}>loading...</Typography>
+                    </Skeleton>
+                    :
+                    <Typography variant={'overline'}>{userInfo.name}</Typography>
+                    }
+                    <Typography variant={'body2'} >Phone</Typography>
+                    {!userInfo.phone ?
+                    <Skeleton variant="overlay" width={'100%'}>
+                        <Typography variant={'overline'}>loading...</Typography>
+                    </Skeleton>
+                    :
+                    <Typography variant={'overline'}>{userInfo.phone}</Typography>
+                    }
+                 <Stack direction={'column'}>
+                    <Typography variant={'caption'} sx={{ marginBottom: '0.5rem', backgroundColor: 'whitesmoke' }}><b>User Credentials</b></Typography>
+                    <Typography variant={'body2'} >No. KTP</Typography>
+                    {!userInfo.credentials.no_ktp ?
+                    <Skeleton variant="overlay" width={'100%'}>
+                        <Typography variant={'overline'}>loading...</Typography>
+                    </Skeleton>
+                    :
+                    <Typography variant={'overline'}>{userInfo.credentials.no_ktp}</Typography>
+                    }
+                    <Typography variant={'body2'} >NIK</Typography>
+                    {!userInfo.credentials.nik ?
+                    <Skeleton variant="overlay" width={'100%'}>
+                        <Typography variant={'overline'}>loading...</Typography>
+                    </Skeleton>
+                    :
+                    <Typography variant={'overline'}>{userInfo.credentials.nik}</Typography>
+                    }
+                    {!userInfo.credentials?.photo ?
+                    <Skeleton variant="overlay" width={'100%'} sx={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                        <Button variant={'contained'}>Download Credentials</Button>
+                    </Skeleton>
+                    :
+                    <Button variant={'contained'} onClick={() => downloadCredential()} sx={{ marginBottom: '0.5rem' }}>Download Credentials</Button>
+                    }
+                    <Grid container columnSpacing={1} spacing={2}>
+                        {userInfo.credentials?.photo ?
+                        (<>
+                        <Grid item xs={6}>
+                            <Button variant="contained" color="success" fullWidth>Agree</Button>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <Button variant="contained" color={'error'} fullWidth>Reject</Button>
+                        </Grid>
+                        </>)
+                        :
+                        (<>
+                        <Grid item xs={6}>
+                            <Skeleton variant="overlay" width={'100%'}>
+                                <Button variant="contained" color="success" fullWidth>loading...</Button>
+                            </Skeleton>
+                        </Grid>
+                        <Grid item xs={6}>
+                            <Skeleton variant="overlay" width={'100%'}>
+                                <Button variant="contained" color="success" fullWidth>loading...</Button>
+                            </Skeleton>
+                        </Grid>
+                        </>)
+                        }
+                        
+                        <Grid item xs={12}>
+                            <Button variant="contained" color={'info'} fullWidth onClick={() => closeModal()}>Cancel</Button>
+                        </Grid>
+                    </Grid>
+
+                 </Stack>
                 
-                 <Button variant={'contained'}>Download Credentials</Button>
             {/* </Skeleton> */}
         </Box>
         </Modal>

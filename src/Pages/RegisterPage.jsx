@@ -3,6 +3,7 @@ import { Box, Grid, Card, CardMedia, FormControlLabel, Checkbox, CardContent, Ty
 import {API} from '../Services/Api'
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const RegisterPage = () => {
   const [email, setEmail] = useState('');
@@ -40,6 +41,11 @@ const RegisterPage = () => {
       re_password: rePassword,
       role: role ? 1 : 0
     };
+      await axios.get(process.env.REACT_APP_URL_COOKIE, {
+      withCredentials: true
+    })
+      // await axios.get(process.env.REACT_APP_URL_API + 'csrf-leline')
+      // .then((res) => csrf = res.data.token)
       await API.postForm('register', formData)
         .then((res) => {
           if (res.status !== 200) return;
@@ -126,7 +132,9 @@ const RegisterPage = () => {
     },
   }));
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+
+  }, []);
   return (
     <>
       <BgLogin></BgLogin>

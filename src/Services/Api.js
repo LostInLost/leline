@@ -6,7 +6,7 @@ import { Cookies } from "react-cookie";
     baseURL: process.env.REACT_APP_URL_API,
     withCredentials: true,
     headers: {
-        Authorization: `Bearer ${cookies.get('__token_')}`,
+        // Authorization: `Bearer ${cookies.get('__token_')}`,
         Accept: 'application/json',
     }
   });
